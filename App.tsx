@@ -1634,30 +1634,6 @@ export default function App(){
           </TouchableOpacity>
         ))}
       </AccordionCard>
-      <GlassCard colors={colors} delay={115}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>💼 Aylık Bütçe Özeti</Text>
-        <View style={s.statsRow}>
-          <StatBlock label="Limit" value={monthlyBudgetValue>0?`₺${monthlyBudgetValue.toFixed(0)}`:'—'} color={colors.primary} colors={colors}/>
-          <StatBlock label="Bu Ay" value={`₺${monthlyExpenseTotal.toFixed(0)}`} color={colors.warning} colors={colors}/>
-          <StatBlock label="Kalan" value={monthlyBudgetValue>0?`₺${monthlyBudgetRemaining.toFixed(0)}`:'—'} color={colors.success} colors={colors}/>
-        </View>
-        <Text style={{fontSize:12,color:colors.subText,marginTop:8}}>{monthlyBudgetValue>0?`Bütçenin %${monthlyBudgetPercent} kısmı kullanıldı.`:'Aylık bütçe limiti belirlemek için Mutfak > Bütçe Takibi bölümünü kullan.'}</Text>
-      </GlassCard>
-      <GlassCard colors={colors} delay={120}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>📊 Firebase Analytics</Text>
-        <View style={s.statsRow}>
-          <StatBlock label="Events" value={Analytics.events().length} color={colors.primary} colors={colors}/>
-          <StatBlock label="Quizler" value={history.length} color={colors.warning} colors={colors}/>
-          <StatBlock label="Öğünler" value={meals.length} color={colors.success} colors={colors}/>
-        </View>
-        <Text style={{fontSize:11,color:colors.subText,marginTop:8}}>Son: {Analytics.events().slice(-1)[0]?.name||'—'}</Text>
-      </GlassCard>
-      <GlassCard colors={colors} delay={130}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>ℹ️ Hakkında</Text>
-        <Text style={{fontSize:40,textAlign:'center',marginBottom:6}}>💸</Text>
-        
-        <Text style={[s.bigTitle,{color:colors.text,textAlign:'center',fontSize:16}]}>Fakirmetre</Text><Text style={{fontSize:12,color:colors.subText,textAlign:'center',marginTop:4}}>AI Danışman • Premium • Turnuva • Cloud • Analytics • XP</Text>
-      </GlassCard>
     </ScrollView>
   );
 
