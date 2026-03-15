@@ -72,6 +72,23 @@ import {
 import { getTheme, type Colors } from './src/theme';
 import { EXPENSE_CATEGORIES, createExpense, createSavingsGoal, getCategoryDistribution, getGoalProgress, getMonthlyExpenseTotal, getRecentExpenseAverage, isSameMonth, summarizeExpenses } from './src/features/finance';
 import { loadPersistedAppData, resetPersistedAppData, savePersistedAppData } from './src/services/persistence';
+import * as Notifications from 'expo-notifications';
+import * as TaskManager from 'expo-task-manager';
+
+// ── Bildirim davranışı ayarla ─────────────────────────────────
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+// ── Arka plan görev tanımla ───────────────────────────────────
+const DAILY_REMINDER_TASK = 'DAILY_REMINDER';
+TaskManager.defineTask(DAILY_REMINDER_TASK, async () => {
+  return TaskManager.TaskManagerTaskResult.SUCCESS;
+});
 
 // ─── SPLASH ───────────────────────────────────────────────────────────────────
 function SplashScreen({onDone}:{onDone:()=>void}){
@@ -183,10 +200,30 @@ const ob=StyleSheet.create({
 });
 
 // ─── REUSABLE COMPONENTS ─────────────────────────────────────────────────────
+function AccordionCard({title,defaultOpen=false,colors,delay=0,children}:{title:string;defaultOpen?:boolean;colors:Colors;delay?:number;children:React.ReactNode}){
+  const [open,setOpen]=React.useState(defaultOpen);
+  const anim=React.useRef(new Animated.Value(defaultOpen?1:0)).current;
+  const toggle=()=>{
+    const toVal=open?0:1;
+    setOpen(!open);
+    Animated.timing(anim,{toValue:toVal,duration:250,easing:Easing.out(Easing.cubic),useNativeDriver:false}).start();
+  };
+  return (
+    <GlassCard colors={colors} delay={delay} style={{padding:0,overflow:'hidden'}}>
+      <TouchableOpacity onPress={toggle} style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',padding:16}}>
+        <Text style={{fontSize:19,fontWeight:'900',color:colors.text}}>{title}</Text>
+        <Text style={{fontSize:18,color:colors.primary}}>{open?'▲':'▼'}</Text>
+      </TouchableOpacity>
+      {open&&<View style={{paddingHorizontal:16,paddingBottom:16}}>{children}</View>}
+    </GlassCard>
+  );
+}
+
+
 function GlassCard({children,colors,delay=0,style}:{children:React.ReactNode;colors:Colors;delay?:number;style?:any}){
   const op=useRef(new Animated.Value(0)).current;
   const ty=useRef(new Animated.Value(14)).current;
-  useEffect(()=>{Animated.parallel([Animated.timing(op,{toValue:1,duration:420,delay,easing:Easing.out(Easing.cubic),useNativeDriver:true}),Animated.timing(ty,{toValue:0,duration:420,delay,easing:Easing.out(Easing.cubic),useNativeDriver:true})]).start();},[]);
+  useEffect(()=>{Animated.parallel([Animated.timing(op,{toValue:1,duration:480,delay,easing:Easing.out(Easing.cubic),useNativeDriver:true}),Animated.timing(ty,{toValue:0,duration:480,delay,easing:Easing.out(Easing.back(1.2)),useNativeDriver:true})]).start();},[]);
   return <Animated.View style={[s.card,{backgroundColor:colors.surface,borderColor:colors.border,opacity:op,transform:[{translateY:ty}]},style]}>{children}</Animated.View>;
 }
 
@@ -403,11 +440,15 @@ export default function App(){
   const [mealSearch,setMealSearch]=useState('');
   const [budgetInput,setBudgetInput]=useState('');
   const [budgetResult,setBudgetResult]=useState<{maxBudget:number;name:string;emoji:string;items:{food:string;price:number}[];totalCal:number}[]|null>(null);
-  const [kitchenTab,setKitchenTab]=useState<'kalori'|'butce'|'takip'>('kalori');
+  const [kitchenTab,setKitchenTab]=useState<'kalori'|'butce'|'takip'|'gelir'>('kalori');
   const [foodCat,setFoodCat]=useState('Tümü');
   const [expenses,setExpenses]=useState<ExpenseEntry[]>([]);
   const [savingsGoals,setSavingsGoals]=useState<SavingsGoal[]>([]);
   const [expenseTitle,setExpenseTitle]=useState('');
+  const [incomeTitle,setIncomeTitle]=useState('');
+  const [incomeAmount,setIncomeAmount]=useState('');
+  const [incomeCategory,setIncomeCategory]=useState('Maaş');
+  const [incomes,setIncomes]=useState<{id:string;title:string;amount:number;category:string;createdAt:string}[]>([]);
   const [expenseAmount,setExpenseAmount]=useState('');
   const [expenseCategory,setExpenseCategory]=useState<(typeof EXPENSE_CATEGORIES)[number]>('Gıda');
   const [goalTitle,setGoalTitle]=useState('');
@@ -509,6 +550,7 @@ export default function App(){
         lastCloudBackupAt,
         meals,
         expenses,
+        incomes,
         savingsGoals,
         monthlyBudgetLimit: monthlyBudgetValue,
       });
@@ -516,6 +558,74 @@ export default function App(){
   },[profile,history,settings,premium,notifications,aiUsageCount,lastCloudBackupAt,meals,expenses,savingsGoals,monthlyBudgetValue,appState]);
   // 📊 Analytics kullanıcı prop
   useEffect(()=>{Analytics.setProp('level',String(profile.level));Analytics.setProp('premium',premium);Analytics.setProp('zodiac',profile.zodiac);},[profile.level,premium,profile.zodiac]);
+
+
+  // ── Push bildirim izni al ──────────────────────────────────
+  useEffect(()=>{
+    (async()=>{
+      const {status:existing}=await Notifications.getPermissionsAsync();
+      let finalStatus=existing;
+      if(existing!=='granted'){
+        const {status}=await Notifications.requestPermissionsAsync();
+        finalStatus=status;
+      }
+      if(finalStatus!=='granted') return;
+      if(Platform.OS==='android'){
+        await Notifications.setNotificationChannelAsync('default',{
+          name:'Fakirmetre',
+          importance:Notifications.AndroidImportance.MAX,
+          vibrationPattern:[0,250,250,250],
+          lightColor:'#38bdf8',
+        });
+      }
+    })();
+  },[]);
+
+  // ── Bildirim helper fonksiyonları ─────────────────────────
+  const scheduleLocalNotif=async(title:string,body:string,seconds=1)=>{
+    try{
+      await Notifications.scheduleNotificationAsync({
+        content:{title,body,sound:true,data:{type:'local'}},
+        trigger:{seconds,channelId:'default'},
+      });
+    }catch(e){console.log('Bildirim hatası:',e);}
+  };
+
+  const scheduleDailyReminder=async()=>{
+    try{
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await Notifications.scheduleNotificationAsync({
+        content:{
+          title:'💸 Fakirmetre Hatırlatma',
+          body:'Bugün harcamalarını kaydetmeyi unutma!',
+          sound:true,
+          data:{type:'daily'},
+        },
+        trigger:{
+          hour:20,
+          minute:0,
+          repeats:true,
+          channelId:'default',
+        },
+      });
+    }catch(e){console.log('Günlük hatırlatma hatası:',e);}
+  };
+
+  const scheduleBudgetAlert=async(percent:number)=>{
+    if(percent>=80&&percent<100){
+      await scheduleLocalNotif(
+        '⚠️ Bütçe Uyarısı',
+        `Aylık bütçenin %${percent}'ini harcadın! Dikkatli ol.`,
+        2
+      );
+    } else if(percent>=100){
+      await scheduleLocalNotif(
+        '🚨 Bütçe Aşıldı!',
+        'Aylık bütçeni aştın. Harcamalarını kontrol et.',
+        2
+      );
+    }
+  };
 
   const addXP=useCallback((xpGain:number)=>{
     setProfile(prev=>{
@@ -586,6 +696,12 @@ export default function App(){
     setExpenseAmount('');
     addXP(10);
     addNotif('Harcama eklendi','Bütçe takibine yeni kayıt eklendi.','💸');
+    scheduleLocalNotif('💸 Harcama Kaydedildi', `${expenseTitle} - ₺${expenseAmount}`, 1);
+    if(monthlyBudgetValue>0){
+      const newTotal=expenses.reduce((s,e)=>s+e.amount,0)+Number(expenseAmount.replace(',','.'));
+      const pct=Math.round((newTotal/monthlyBudgetValue)*100);
+      scheduleBudgetAlert(pct);
+    }
   };
   const addSavingsGoalEntry=()=>{
     const target=Number(goalTarget.replace(',', '.'));
@@ -598,6 +714,7 @@ export default function App(){
     setGoalTarget('');
     addXP(20);
     addNotif('Yeni hedef oluşturuldu','Bir tasarruf hedefi oluşturdun.','🎯');
+    scheduleLocalNotif('🎯 Yeni Tasarruf Hedefi!', `"${goalTitle}" hedefi oluşturuldu.`, 1);
   };
   const contributeGoal=(goalId:string, amount:number)=>setSavingsGoals(prev=>prev.map(goal=>goal.id===goalId?{...goal,current:Math.min(goal.target, goal.current+amount)}:goal));
   const removeExpense=(expenseId:string)=>setExpenses(prev=>prev.filter(item=>item.id!==expenseId));
@@ -733,7 +850,7 @@ export default function App(){
     <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       {/* Sub Tabs */}
       <View style={[s.subTabRow,{backgroundColor:colors.surfaceSoft,borderColor:colors.border}]}>
-        {(['kalori','butce','takip'] as const).map(t=><TouchableOpacity key={t} onPress={()=>setKitchenTab(t)} style={[s.subTab,{backgroundColor:kitchenTab===t?colors.primary:'transparent'}]}><Text style={{fontSize:13,fontWeight:'900',color:kitchenTab===t?'#fff':colors.subText}}>{t==='kalori'?'🥗 Kalori Takibi':t==='butce'?'💰 Bütçe Asistanı':'📒 Bütçe Takibi'}</Text></TouchableOpacity>)}
+        {(['kalori','butce','takip','gelir'] as const).map(t=><TouchableOpacity key={t} onPress={()=>setKitchenTab(t)} style={[s.subTab,{backgroundColor:kitchenTab===t?colors.primary:'transparent'}]}><Text style={{fontSize:13,fontWeight:'900',color:kitchenTab===t?'#fff':colors.subText}}>{t==='kalori'?'🥗 Kalori':t==='butce'?'💰 Bütçe':t==='takip'?'📒 Gider':'💵 Gelir'}</Text></TouchableOpacity>)}
       </View>
 
       {kitchenTab==='kalori'&&<>
@@ -847,6 +964,158 @@ export default function App(){
               <Text style={{fontSize:14,fontWeight:'900',color:colors.primary}}>{item.range}</Text>
             </View>
           ))}
+        </GlassCard>}
+      </>}
+
+
+      {kitchenTab==='gelir'&&<>
+        {/* Özet Kartı */}
+        <GlassCard colors={colors}>
+          <Text style={[s.sectionTitle,{color:colors.text}]}>💵 Gelir Takibi</Text>
+          <View style={s.statsRow}>
+            <StatBlock
+              label="Toplam Gelir"
+              value={`₺${incomes.reduce((s,i)=>s+i.amount,0).toFixed(0)}`}
+              color={colors.success}
+              colors={colors}
+            />
+            <StatBlock
+              label="Bu Ay"
+              value={`₺${incomes.filter(i=>isSameMonth(i.createdAt)).reduce((s,i)=>s+i.amount,0).toFixed(0)}`}
+              color={colors.primary}
+              colors={colors}
+            />
+            <StatBlock
+              label="Net Durum"
+              value={`₺${(incomes.reduce((s,i)=>s+i.amount,0) - expenseSummary.total).toFixed(0)}`}
+              color={incomes.reduce((s,i)=>s+i.amount,0) - expenseSummary.total >= 0 ? colors.success : colors.danger}
+              colors={colors}
+            />
+          </View>
+        </GlassCard>
+
+        {/* Gelir vs Gider Karşılaştırma */}
+        <GlassCard colors={colors} delay={30}>
+          <Text style={[s.sectionTitle,{color:colors.text}]}>📊 Gelir vs Gider</Text>
+          {[
+            {label:'💵 Toplam Gelir', amount:incomes.reduce((s,i)=>s+i.amount,0), color:colors.success},
+            {label:'💸 Toplam Gider', amount:expenseSummary.total, color:colors.danger},
+          ].map(item=>(
+            <View key={item.label} style={{marginBottom:12}}>
+              <View style={s.rowBetween}>
+                <Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>{item.label}</Text>
+                <Text style={{fontSize:14,fontWeight:'900',color:item.color}}>₺{item.amount.toFixed(0)}</Text>
+              </View>
+              <View style={{marginTop:6}}>
+                <AnimBar
+                  value={Math.min(100, incomes.reduce((s,i)=>s+i.amount,0) > 0
+                    ? Math.round((item.amount / Math.max(incomes.reduce((s,i)=>s+i.amount,0), expenseSummary.total)) * 100)
+                    : 0)}
+                  color={item.color}
+                  bg={colors.surfaceSoft}
+                  height={10}
+                />
+              </View>
+            </View>
+          ))}
+          <View style={[s.infoBox,{
+            backgroundColor: incomes.reduce((s,i)=>s+i.amount,0) >= expenseSummary.total ? colors.success+'18' : colors.danger+'18',
+            borderColor: incomes.reduce((s,i)=>s+i.amount,0) >= expenseSummary.total ? colors.success : colors.danger,
+            marginTop:4
+          }]}>
+            <Text style={{fontSize:13,fontWeight:'900',color:colors.text,textAlign:'center'}}>
+              {incomes.reduce((s,i)=>s+i.amount,0) >= expenseSummary.total
+                ? `✅ ${(incomes.reduce((s,i)=>s+i.amount,0) - expenseSummary.total).toFixed(0)}₺ tasarruf ettiniz!`
+                : `⚠️ ${(expenseSummary.total - incomes.reduce((s,i)=>s+i.amount,0)).toFixed(0)}₺ açık var!`}
+            </Text>
+          </View>
+        </GlassCard>
+
+        {/* Gelir Ekle */}
+        <GlassCard colors={colors} delay={50}>
+          <Text style={[s.sectionTitle,{color:colors.text}]}>➕ Gelir Ekle</Text>
+          <TextInput
+            style={[s.inlineInput,{backgroundColor:colors.surfaceSoft,borderColor:colors.border,color:colors.text}]}
+            value={incomeTitle}
+            onChangeText={setIncomeTitle}
+            placeholder="Gelir adı (Maaş, Freelance...)"
+            placeholderTextColor={colors.subText}
+          />
+          <View style={{height:10}}/>
+          <TextInput
+            style={[s.inlineInput,{backgroundColor:colors.surfaceSoft,borderColor:colors.border,color:colors.text}]}
+            value={incomeAmount}
+            onChangeText={setIncomeAmount}
+            placeholder="Tutar (₺)"
+            placeholderTextColor={colors.subText}
+            keyboardType="numeric"
+          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginVertical:10}}>
+            {['Maaş','Freelance','Kira Geliri','Yatırım','Ek İş','Diğer'].map(cat=>(
+              <TouchableOpacity
+                key={cat}
+                onPress={()=>setIncomeCategory(cat)}
+                style={[s.catChip,{
+                  backgroundColor:incomeCategory===cat?colors.success:colors.surfaceSoft,
+                  borderColor:incomeCategory===cat?colors.success:colors.border
+                }]}
+              >
+                <Text style={{fontSize:11,fontWeight:'800',color:incomeCategory===cat?'#fff':colors.subText}}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <PressBtn
+            onPress={()=>{
+              const amount=Number(incomeAmount.replace(',','.'));
+              if(!incomeTitle.trim()||!Number.isFinite(amount)||amount<=0){
+                Alert.alert('Eksik bilgi','Gelir adı ve geçerli tutar gir.');
+                return;
+              }
+              setIncomes(prev=>[{
+                id:`inc_${Date.now()}`,
+                title:incomeTitle.trim(),
+                amount,
+                category:incomeCategory,
+                createdAt:new Date().toISOString()
+              },...prev]);
+              setIncomeTitle('');
+              setIncomeAmount('');
+              addXP(15);
+              addNotif('Gelir eklendi 💵','Yeni gelir kaydın oluşturuldu.','💵');
+            }}
+            style={[s.mainBtn,{backgroundColor:colors.success}]}
+          >
+            <Text style={s.mainBtnTxt}>💵 Gelir Ekle (+15 XP)</Text>
+          </PressBtn>
+        </GlassCard>
+
+        {/* Gelir Listesi */}
+        {incomes.length>0&&<GlassCard colors={colors} delay={70}>
+          <View style={s.rowBetween}>
+            <Text style={[s.sectionTitle,{color:colors.text,marginBottom:0}]}>📋 Gelirlerim</Text>
+            <TouchableOpacity onPress={()=>setIncomes([])}>
+              <Text style={{fontSize:12,fontWeight:'900',color:colors.danger}}>Temizle</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{marginTop:12}}>
+            {incomes.slice(0,15).map(item=>(
+              <View key={item.id} style={[s.rowBetween,{paddingVertical:10,borderBottomWidth:1,borderBottomColor:colors.border,alignItems:'flex-start'}]}>
+                <View style={{flex:1,paddingRight:10}}>
+                  <Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>{item.title}</Text>
+                  <Text style={{fontSize:11,color:colors.subText}}>{item.category} • {new Date(item.createdAt).toLocaleDateString('tr-TR')}</Text>
+                </View>
+                <View style={{alignItems:'flex-end',gap:8}}>
+                  <Text style={{fontSize:14,fontWeight:'900',color:colors.success}}>+₺{item.amount.toFixed(0)}</Text>
+                  <TouchableOpacity
+                    onPress={()=>setIncomes(prev=>prev.filter(i=>i.id!==item.id))}
+                    style={[s.miniChip,{backgroundColor:colors.danger+'12',borderColor:colors.danger,paddingVertical:5,paddingHorizontal:8}]}
+                  >
+                    <Text style={{fontSize:11,color:colors.danger,fontWeight:'900'}}>Sil</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
         </GlassCard>}
       </>}
 
@@ -1279,8 +1548,7 @@ export default function App(){
         <Text style={{fontSize:16,color:colors.gold}}>→</Text>
       </TouchableOpacity>}
       {premium!=='free'&&<View style={[s.card,{backgroundColor:colors.gold+'18',borderColor:colors.gold,borderWidth:1.5,flexDirection:'row',alignItems:'center',gap:8,padding:14}]}><Text style={{fontSize:24}}>💎</Text><View><Text style={{fontSize:15,fontWeight:'900',color:colors.gold}}>{premium.toUpperCase()} Üye</Text><Text style={{fontSize:12,color:colors.subText}}>Tüm özellikler aktif</Text></View></View>}
-      <GlassCard colors={colors}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>🎨 Görünüm</Text>
+      <AccordionCard title="🎨 Görünüm" defaultOpen={true} colors={colors}>
         {([{key:'darkMode',title:'Koyu Tema',desc:'Arayüz rengini değiştirir'},{key:'starsEnabled',title:'Yıldız Animasyonu',desc:'Arka plan efektini açar/kapatır'}] as {key:keyof SettingsState;title:string;desc:string}[]).map((item,i,arr)=>(
           <View key={item.key} style={[s.settingRow,{borderBottomColor:i<arr.length-1?colors.border:'transparent'}]}>
             <View style={{flex:1,paddingRight:12}}><Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>{item.title}</Text><Text style={{marginTop:3,fontSize:12,color:colors.subText}}>{item.desc}</Text></View>
@@ -1296,18 +1564,16 @@ export default function App(){
             {(Object.keys(ACCENTS) as AccentKey[]).map(ac=><Text key={ac} style={{fontSize:10,color:settings.accent===ac?colors.primary:colors.subText,fontWeight:settings.accent===ac?'900':'500'}}>{ACCENTS[ac].name}</Text>)}
           </View>
         </View>
-      </GlassCard>
-      <GlassCard colors={colors} delay={50}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>📋 İçerik</Text>
+      </AccordionCard>
+      <AccordionCard title="📋 İçerik" defaultOpen={false} colors={colors} delay={50}>
         {([{key:'showQuote',title:'Günün Sözü',desc:'Motivasyon kartını göster'},{key:'showChallenges',title:'Günlük Görev',desc:'Meydan okuma kartını göster'},{key:'showInsights',title:'Burç Önizleme',desc:'Ana ekranda burç yorumu göster'}] as {key:keyof SettingsState;title:string;desc:string}[]).map((item,i,arr)=>(
           <View key={item.key} style={[s.settingRow,{borderBottomColor:i<arr.length-1?colors.border:'transparent'}]}>
             <View style={{flex:1,paddingRight:12}}><Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>{item.title}</Text><Text style={{marginTop:3,fontSize:12,color:colors.subText}}>{item.desc}</Text></View>
             <Switch value={settings[item.key] as boolean} onValueChange={v=>updateSetting(item.key,v)} trackColor={{false:'#334155',true:colors.primary+'88'}} thumbColor={settings[item.key]?colors.primary:'#94a3b8'}/>
           </View>
         ))}
-      </GlassCard>
-      <GlassCard colors={colors} delay={90}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>👤 Profil Düzenle</Text>
+      </AccordionCard>
+      <AccordionCard title="👤 Profil Düzenle" defaultOpen={false} colors={colors} delay={90}>
         <View style={{flexDirection:'row',gap:10,marginBottom:10}}>
           <Text style={{fontSize:36}}>{profile.avatar}</Text>
           <View style={{flex:1}}>
@@ -1321,9 +1587,8 @@ export default function App(){
         <View style={s.zodiacGrid}>
           {zodiacSigns.map(z=><TouchableOpacity key={z} onPress={()=>setProfile(p=>({...p,zodiac:z}))} style={[s.zodiacChip,{backgroundColor:profile.zodiac===z?colors.primary:colors.surfaceSoft,borderColor:profile.zodiac===z?colors.primary:colors.border}]}><Text style={{fontSize:10}}>{zodiacEmojis[z]}</Text><Text style={{fontSize:10,fontWeight:'800',color:profile.zodiac===z?'#fff':colors.text}}>{z}</Text></TouchableOpacity>)}
         </View>
-      </GlassCard>
-      <GlassCard colors={colors} delay={100}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>🔒 Güvenlik & Gizlilik</Text>
+      </AccordionCard>
+      <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
         <View style={[s.settingRow,{borderBottomColor:colors.border}]}>
           <View style={{flex:1,paddingRight:12}}>
             <Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>PIN Kilidi</Text>
@@ -1354,9 +1619,8 @@ export default function App(){
         <TouchableOpacity onPress={()=>{Alert.alert('⚠️ Tüm Verileri Sil','Profilin, quiz geçmişin ve tüm verilerin silinecek. Bu işlem geri alınamaz!',[{text:'İptal'},{text:'Sil',style:'destructive',onPress:()=>{resetPersistedAppData();setProfile({...DEFAULT_PROFILE});setHistory([]);setSettings({...DEFAULT_SETTINGS});setPremium('free');setNotifications([]);setAiUsageCount(0);setLastCloudBackupAt('');setMeals([]);setExpenses([]);setSavingsGoals([]);setMonthlyBudgetLimit('');setAppState('onboarding');Analytics.log('data_reset',{});}}]);}} style={{marginTop:12,borderWidth:1,borderColor:colors.danger+'44',borderRadius:12,paddingVertical:12,alignItems:'center',backgroundColor:colors.danger+'11'}}>
           <Text style={{fontSize:13,fontWeight:'900',color:colors.danger}}>🗑️ Tüm Verileri Sil</Text>
         </TouchableOpacity>
-      </GlassCard>
-      <GlassCard colors={colors} delay={110}>
-        <Text style={[s.sectionTitle,{color:colors.text}]}>🔧 Araçlar</Text>
+      </AccordionCard>
+      <AccordionCard title="🔧 Araçlar" defaultOpen={false} colors={colors} delay={110}>
         {[
           {title:'🤖 AI Danışman',desc:'Claude ile finans sohbeti (Plus/Pro)',action:()=>premium==='free'?setPremiumModalVisible(true):setAiAdvisorVisible(true)},
           {title:'🏆 Haftalık Turnuva',desc:'Liderlik yarışı — haftalık ödüller',action:()=>setTournamentVisible(true)},
@@ -1369,7 +1633,7 @@ export default function App(){
             <Text style={{color:colors.primary,fontSize:16}}>→</Text>
           </TouchableOpacity>
         ))}
-      </GlassCard>
+      </AccordionCard>
       <GlassCard colors={colors} delay={115}>
         <Text style={[s.sectionTitle,{color:colors.text}]}>💼 Aylık Bütçe Özeti</Text>
         <View style={s.statsRow}>
@@ -1713,52 +1977,52 @@ const s=StyleSheet.create({
   safe:{flex:1},container:{flex:1,paddingHorizontal:12,paddingTop:4},
   header:{flexDirection:'row',alignItems:'center',paddingBottom:6,paddingTop:2,gap:8},
   appTitle:{fontSize:22,fontWeight:'900',letterSpacing:0.2},
-  appSub:{fontSize:10,marginTop:1,fontWeight:'600'},
-  scrollContent:{gap:12,paddingBottom:20},
-  card:{borderWidth:1,borderRadius:24,padding:16,elevation:3,shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.1,shadowRadius:6},
-  powerMark:{fontSize:28,textAlign:'center',marginBottom:2},
+  appSub:{fontSize:12,marginTop:2,fontWeight:'700'},
+  scrollContent:{gap:14,paddingBottom:24},
+  card:{borderWidth:1,borderRadius:28,padding:18,elevation:6,shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:0.18,shadowRadius:12},
+  powerMark:{fontSize:32,textAlign:'center',marginBottom:4},
   heroTitle:{textAlign:'center',fontSize:27,fontWeight:'900'},
   statsRow:{flexDirection:'row',gap:8,marginTop:14},
-  statBlock:{flex:1,borderWidth:1,borderRadius:14,paddingVertical:12,alignItems:'center'},
-  statVal:{fontSize:15,fontWeight:'900'},
-  statLbl:{marginTop:2,fontSize:10,fontWeight:'700'},
+  statBlock:{flex:1,borderWidth:1,borderRadius:18,paddingVertical:14,alignItems:'center'},
+  statVal:{fontSize:17,fontWeight:'900'},
+  statLbl:{marginTop:3,fontSize:11,fontWeight:'700'},
   sectionTitle:{fontSize:19,fontWeight:'900',marginBottom:10},
   rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
-  searchBar:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:13,paddingHorizontal:11,paddingVertical:9,marginBottom:10},
+  searchBar:{flexDirection:'row',alignItems:'center',borderWidth:1.5,borderRadius:16,paddingHorizontal:14,paddingVertical:11,marginBottom:12},
   searchInput:{flex:1,fontSize:13,paddingVertical:0},
   zodiacGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:4},
   zodiacChip:{flexDirection:'row',alignItems:'center',gap:3,borderWidth:1,borderRadius:999,paddingVertical:7,paddingHorizontal:9},
-  infoBox:{borderWidth:1,borderRadius:16,padding:13,marginTop:10},
+  infoBox:{borderWidth:1.5,borderRadius:18,padding:15,marginTop:10},
   bigPanel:{borderWidth:1,borderRadius:20,padding:16,marginTop:8},
   bigTitle:{fontSize:19,fontWeight:'900',marginBottom:8},
   stepBadge:{alignSelf:'flex-start',borderRadius:999,paddingHorizontal:12,paddingVertical:4,marginBottom:12},
-  questionTxt:{fontSize:19,lineHeight:28,fontWeight:'900',marginBottom:16},
-  mainBtn:{borderRadius:15,paddingVertical:14,alignItems:'center',marginBottom:9},
-  mainBtnTxt:{color:'#fff',fontSize:14,fontWeight:'900'},
+  questionTxt:{fontSize:21,lineHeight:32,fontWeight:'900',marginBottom:20},
+  mainBtn:{borderRadius:18,paddingVertical:15,alignItems:'center',marginBottom:9},
+  mainBtnTxt:{color:'#fff',fontSize:15,fontWeight:'900',letterSpacing:0.3},
   levelBadge:{borderWidth:1.5,borderRadius:999,paddingHorizontal:14,paddingVertical:6},
   levelBadgeTxt:{fontSize:11,fontWeight:'900',textTransform:'uppercase'},
-  resultTitle:{marginTop:8,textAlign:'center',fontSize:24,fontWeight:'900'},
+  resultTitle:{marginTop:8,textAlign:'center',fontSize:26,fontWeight:'900',letterSpacing:0.3},
   scorePill:{alignSelf:'center',marginTop:10,borderWidth:1,borderRadius:999,paddingHorizontal:14,paddingVertical:8},
-  xpBadge:{borderWidth:1,borderRadius:999,paddingHorizontal:9,paddingVertical:5},
+  xpBadge:{borderWidth:1.5,borderRadius:999,paddingHorizontal:11,paddingVertical:6},
   emptyBox:{borderWidth:1,borderRadius:16,padding:24,marginTop:8},
   settingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:12,borderBottomWidth:1},
   accentBtn:{width:32,height:32,borderRadius:16,alignItems:'center',justifyContent:'center'},
-  inlineInput:{borderWidth:1,borderRadius:11,paddingHorizontal:11,paddingVertical:9,fontSize:13},
+  inlineInput:{borderWidth:1.5,borderRadius:14,paddingHorizontal:14,paddingVertical:12,fontSize:14},
   avatarMini:{width:42,height:42,borderRadius:11,borderWidth:2,alignItems:'center',justifyContent:'center',marginRight:7},
   overlay:{flex:1,alignItems:'center',justifyContent:'center'},
   rewardBox:{width:'84%',borderRadius:26,borderWidth:1,padding:22,alignItems:'center'},
   rewardTitle:{fontSize:21,fontWeight:'900',marginTop:10,marginBottom:8,textAlign:'center'},
-  foodRow:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:14,padding:12},
-  catChip:{borderWidth:1,borderRadius:999,paddingVertical:6,paddingHorizontal:12,marginRight:7},
+  foodRow:{flexDirection:'row',alignItems:'center',borderWidth:1.5,borderRadius:18,padding:14},
+  catChip:{borderWidth:1.5,borderRadius:999,paddingVertical:8,paddingHorizontal:14,marginRight:8},
   miniChip:{borderWidth:1,borderRadius:12,paddingHorizontal:10,paddingVertical:8,alignItems:'center'},
   budgetInputRow:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:14,paddingHorizontal:14,paddingVertical:12},
   budgetInput:{flex:1,fontSize:18,fontWeight:'800',paddingVertical:0},
   subTabRow:{flexDirection:'row',borderWidth:1,borderRadius:16,padding:5,marginBottom:4},
-  subTab:{flex:1,borderRadius:12,paddingVertical:9,alignItems:'center'},
-  tabBar:{flexDirection:'row',borderWidth:1,borderRadius:20,padding:5,marginBottom:8,marginTop:3},
-  tabItem:{flex:1,borderWidth:1,borderRadius:14,paddingVertical:8,alignItems:'center',justifyContent:'center',position:'relative'},
+  subTab:{flex:1,borderRadius:14,paddingVertical:11,alignItems:'center'},
+  tabBar:{flexDirection:'row',borderWidth:1,borderRadius:24,padding:6,marginBottom:10,marginTop:4},
+  tabItem:{flex:1,borderWidth:1,borderRadius:18,paddingVertical:9,alignItems:'center',justifyContent:'center',position:'relative'},
   tabDot:{position:'absolute',top:4,width:4,height:4,borderRadius:2},
-  tabIcon:{fontSize:15,marginBottom:1},
+  tabIcon:{fontSize:17,marginBottom:2},
   tabLabel:{fontSize:11,fontWeight:'800'},
 });
 
