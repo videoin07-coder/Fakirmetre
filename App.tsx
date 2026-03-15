@@ -1,3 +1,4 @@
+import { FOOD_PRICES } from './src/data/foodPrices';
 import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import {
   Alert, Animated, Easing, KeyboardAvoidingView, Linking, Modal,
@@ -993,15 +994,7 @@ export default function App(){
 
         {!budgetResult&&<GlassCard colors={colors} delay={60}>
           <Text style={[s.sectionTitle,{color:colors.text}]}>📋 Piyasa Fiyat Rehberi</Text>
-          {[
-            {cat:'Ev Yemeği',range:'₺15-35',emoji:'🏠'},
-            {cat:'Çorba',range:'₺25-40',emoji:'🍲'},
-            {cat:'Fast Food',range:'₺40-130',emoji:'🍔'},
-            {cat:'Meyve (adet)',range:'₺3-20',emoji:'🍎'},
-            {cat:'İçecek',range:'₺3-30',emoji:'☕'},
-            {cat:'Tatlı',range:'₺25-40',emoji:'🍮'},
-          ].map(item=>(
-            <View key={item.cat} style={[s.rowBetween,{paddingVertical:10,borderBottomWidth:1,borderBottomColor:colors.border}]}>
+          {FOOD_PRICES}>
               <Text style={{fontSize:18}}>{item.emoji}</Text>
               <Text style={{flex:1,marginLeft:10,fontSize:14,fontWeight:'700',color:colors.text}}>{item.cat}</Text>
               <Text style={{fontSize:14,fontWeight:'900',color:colors.primary}}>{item.range}</Text>
@@ -1673,7 +1666,10 @@ export default function App(){
         <Text style={[s.sectionTitle,{color:colors.text}]}>🔐 Hesap</Text>
         {firebaseUser?(<View><View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}><Text style={{fontSize:36}}>👤</Text><View style={{flex:1}}><Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text><Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text><Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text></View></View><TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}><Text style={s.mainBtnTxt}>Cikis Yap</Text></TouchableOpacity></View>):(<View><Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text><TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}><Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text></TouchableOpacity></View>)}
       </GlassCard>
-      <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
+      <AccordionCard title="🔐 Hesap">
+              {GOOGLE_CARD}
+            </AccordionCard>
+            <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
         <View style={[s.settingRow,{borderBottomColor:colors.border}]}>
           <View style={{flex:1,paddingRight:12}}>
             <Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>PIN Kilidi</Text>
