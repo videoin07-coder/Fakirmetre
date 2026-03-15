@@ -6,4 +6,10 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+
+    <style name="Theme.App.SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splashscreen_background</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
 </resources>
+<!-- Splash Screen Theme -->

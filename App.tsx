@@ -100,7 +100,7 @@ function SplashScreen({onDone}:{onDone:()=>void}){
         </Animated.View>
         <Text style={sl.sub}>TITAN</Text>
         <Animated.View style={{opacity:tagOp,alignItems:'center',marginTop:20}}>
-          <Text style={sl.tag}>AI · Premium · Turnuva · Cloud · XP</Text>
+          <Text style={sl.tag}>Gelir & Gider · AI · Quiz · Astro</Text>
           <View style={{flexDirection:'row',gap:10,marginTop:18}}>
             {[0,1,2].map(i=><Animated.View key={i} style={[sl.dot,{opacity:tagOp,transform:[{scale:spin.interpolate({inputRange:[0,1],outputRange:[0.5,1]})}]}]}/>)}
           </View>
@@ -132,7 +132,7 @@ function OnboardingScreen({onDone}:{onDone:(p:Profile)=>void}){
           <ScrollView contentContainerStyle={{flexGrow:1,justifyContent:'center'}} keyboardShouldPersistTaps="handled">
             {step===0&&<View style={ob.wrap}>
               <Text style={{fontSize:72,textAlign:'center',marginBottom:16}}>🚀</Text>
-              <Text style={ob.title}>Fakirmetre Titan v5.0</Text>
+              <Text style={ob.title}>Fakirmetre</Text>
               <Text style={ob.desc}>AI Danışman • Premium • Turnuva • Cloud Sync</Text>
               <TouchableOpacity style={ob.btn} onPress={next}><Text style={ob.btnTxt}>Haydi Başlayalım →</Text></TouchableOpacity>
             </View>}
@@ -286,7 +286,7 @@ function PinLockScreen({correctPin,onUnlock,colors}:{correctPin:string;onUnlock:
       <StatusBar barStyle="light-content" backgroundColor={colors.background}/>
       <Text style={{fontSize:48,marginBottom:16}}>🔐</Text>
       <Text style={{fontSize:22,fontWeight:'900',color:colors.text,marginBottom:6}}>PIN Gir</Text>
-      <Text style={{fontSize:13,color:colors.subText,marginBottom:32}}>Fakirmetre Titan&apos;a hoş geldin</Text>
+      <Text style={{fontSize:13,color:colors.subText,marginBottom:32}}>Fakirmetre&apos;a hoş geldin</Text>
 
       <Animated.View style={{flexDirection:'row',gap:16,marginBottom:40,transform:[{translateX:shake}]}}>
         {[0,1,2,3].map(i=>(
@@ -386,6 +386,7 @@ function PinSetupModal({visible,onClose,onSave,colors}:{visible:boolean;onClose:
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App(){
   const [appState,setAppState]=useState<AppState>('splash');
+  const [welcomePopup,setWelcomePopup]=useState(false);
   const [activeTab,setActiveTab]=useState<TabKey>('home');
   const [settings,setSettings]=useState<SettingsState>(DEFAULT_SETTINGS);
   const [profile,setProfile]=useState<Profile>(DEFAULT_PROFILE);
@@ -448,7 +449,7 @@ export default function App(){
   const [pinSetupVisible,setPinSetupVisible]=useState(false);
   const [resultCardVisible,setResultCardVisible]=useState(false);
   const [notifications,setNotifications]=useState<NotificationItem[]>([
-    {id:'n1',title:'Hoş Geldin! 🎉',body:'Fakirmetre Titan v5.0 başladı.',time:new Date().toLocaleString('tr-TR'),read:false,icon:'🚀'},
+    {id:'n1',title:'Hoş Geldin! 🎉',body:'Fakirmetre başladı.',time:new Date().toLocaleString('tr-TR'),read:false,icon:'🚀'},
     {id:'n2',title:'Günlük Görev',body:'Bugünkü finansal görevi tamamla!',time:new Date().toLocaleString('tr-TR'),read:false,icon:'🎯'},
     {id:'n3',title:'Haftalık Turnuva',body:'Bu hafta liderlik tablosuna gir!',time:new Date().toLocaleString('tr-TR'),read:true,icon:'🏆'},
   ]);
@@ -624,7 +625,7 @@ export default function App(){
       setSettings(data.settings);
       setPremium(data.premium);
       setNotifications(data.notifications.length?data.notifications:[
-        {id:'n1',title:'Hoş Geldin! 🎉',body:'Fakirmetre Titan v5.0 başladı.',time:new Date().toLocaleString('tr-TR'),read:false,icon:'🚀'},
+        {id:'n1',title:'Hoş Geldin! 🎉',body:'Fakirmetre başladı.',time:new Date().toLocaleString('tr-TR'),read:false,icon:'🚀'},
       ]);
       setAiUsageCount(data.aiUsageCount);
       setLastCloudBackupAt(data.lastCloudBackupAt);
@@ -634,9 +635,10 @@ export default function App(){
       setMonthlyBudgetLimit(data.monthlyBudgetLimit ? String(data.monthlyBudgetLimit) : '');
       setAppState(data.settings.pinEnabled && data.settings.pinCode ? 'locked' : 'app');
       handleDailyLogin();
+      setTimeout(()=>setWelcomePopup(true),1200);
     }).catch(()=>setAppState('onboarding'));
   };
-  const handleOnboardingDone=(p:Profile)=>{setProfile(p);setAppState('app');setTimeout(()=>setDailyRewardVisible(true),700);Analytics.log('onboarding_completed',{zodiac:p.zodiac});};
+  const handleOnboardingDone=(p:Profile)=>{setProfile(p);setAppState('app');setTimeout(()=>setWelcomePopup(true),800);setTimeout(()=>setDailyRewardVisible(true),700);Analytics.log('onboarding_completed',{zodiac:p.zodiac});};
 
   // ─── ASTRO TAB ─────────────────────────────────────────────────────────────
   const renderAstro=()=>(
@@ -926,7 +928,7 @@ export default function App(){
     <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
       <GlassCard colors={colors}>
         <Animated.View style={{opacity:headerGlow}}><Text style={[s.powerMark,{color:colors.primary}]}>✦</Text></Animated.View>
-        <Text style={[s.heroTitle,{color:colors.text}]}>Fakirmetre Titan</Text>
+        <Text style={[s.heroTitle,{color:colors.text}]}>Fakirmetre</Text>
         <View style={{flexDirection:'row',justifyContent:'center',gap:8,marginTop:4}}>
           <View style={[s.xpBadge,{backgroundColor:colors.primary+'22',borderColor:colors.primary}]}><Text style={{fontSize:11,fontWeight:'900',color:colors.primary}}>⚡ Sev. {profile.level}</Text></View>
           <View style={[s.xpBadge,{backgroundColor:colors.warning+'22',borderColor:colors.warning}]}><Text style={{fontSize:11,fontWeight:'900',color:colors.warning}}>🔥 {profile.streak} gün</Text></View>
@@ -1156,7 +1158,7 @@ export default function App(){
                   <Text style={{fontSize:16}}>💬</Text>
                   <Text style={{fontSize:12,color:colors.subText}}>Yorum yap</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={()=>Share.share({message:post.content+`\n\n— ${profile.name} via Fakirmetre Titan 💸\n#FakirmetreTitan`})}>
+                <TouchableOpacity onPress={()=>Share.share({message:post.content+`\n\n— ${profile.name} via Fakirmetre 💸\n#FakirmetreTitan`})}>
                   <Text style={{fontSize:16}}>🔗</Text>
                 </TouchableOpacity>
               </View>
@@ -1390,7 +1392,7 @@ export default function App(){
         <Text style={[s.sectionTitle,{color:colors.text}]}>ℹ️ Hakkında</Text>
         <Text style={{fontSize:40,textAlign:'center',marginBottom:6}}>💸</Text>
         
-        <Text style={[s.bigTitle,{color:colors.text,textAlign:'center',fontSize:16}]}>Fakirmetre Titan v5.0</Text><Text style={{fontSize:12,color:colors.subText,textAlign:'center',marginTop:4}}>AI Danışman • Premium • Turnuva • Cloud • Analytics • XP</Text>
+        <Text style={[s.bigTitle,{color:colors.text,textAlign:'center',fontSize:16}]}>Fakirmetre</Text><Text style={{fontSize:12,color:colors.subText,textAlign:'center',marginTop:4}}>AI Danışman • Premium • Turnuva • Cloud • Analytics • XP</Text>
       </GlassCard>
     </ScrollView>
   );
@@ -1414,6 +1416,7 @@ export default function App(){
       <StatusBar barStyle={settings.darkMode?'light-content':'dark-content'} backgroundColor={colors.backgroundTop} translucent={IS_ANDROID}/>
       <View style={[StyleSheet.absoluteFillObject,{backgroundColor:colors.backgroundTop,height:'42%',top:EXTRA_TOP}]}/>
       <StarField enabled={settings.starsEnabled} color={colors.star}/>
+{welcomePopup&&<Modal transparent animationType="fade" visible onRequestClose={()=>setWelcomePopup(false)}><View style={[s.overlay,{backgroundColor:colors.overlay}]}><View style={{width:"88%",backgroundColor:colors.surface,borderRadius:28,borderWidth:1.5,borderColor:colors.primary,padding:24,alignItems:"center"}}><Text style={{fontSize:56,marginBottom:8}}>💸</Text><Text style={{fontSize:22,fontWeight:"900",color:colors.text,textAlign:"center",marginBottom:8}}>Fakirmetre Hos Geldin!</Text><Text style={{fontSize:15,color:colors.subText,textAlign:"center",lineHeight:22,marginBottom:20}}>Fakirlik skorunu ogrenmeye hazir misin?</Text><TouchableOpacity onPress={()=>{setWelcomePopup(false);setActiveTab("quiz");}} style={[s.mainBtn,{backgroundColor:colors.primary,width:"100%",marginBottom:10}]}><Text style={s.mainBtnTxt}>Skoru Olustur!</Text></TouchableOpacity><TouchableOpacity onPress={()=>setWelcomePopup(false)}><Text style={{fontSize:13,color:colors.subText}}>Simdi degil</Text></TouchableOpacity></View></View></Modal>}
       <DailyRewardModal visible={dailyRewardVisible} xp={getDailyReward()} streak={profile.streak} onClose={()=>setDailyRewardVisible(false)} colors={colors}/>
       {/* 💎 Premium */}
       {premiumModalVisible&&<PremiumPaywall visible onClose={()=>setPremiumModalVisible(false)} onUpgrade={(t)=>{setPremium(t);addNotif('Premium Aktif! 💎',`${t.toUpperCase()} planına hoş geldin!`,'💎');Analytics.log('premium_purchased',{tier:t});}} colors={colors}/>}
@@ -1436,7 +1439,7 @@ export default function App(){
           <View style={{flex:1}}>
             <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
               <FakirmettreIcon size={36} />
-              <Text style={[s.appTitle,{color:colors.text}]}>Fakirmetre Titan</Text>
+              <Text style={[s.appTitle,{color:colors.text}]}>Fakirmetre</Text>
             </View>
             <Text style={[s.appSub,{color:colors.subText}]}>{profile.avatar} {profile.name} • Sev.{profile.level} • {profile.xp}XP</Text>
           </View>
@@ -1494,7 +1497,7 @@ function RewardedAd({visible,onClose,onReward,colors}:{visible:boolean;onClose:(
 function ResultCard({visible,onClose,result,score,maxScore,profile,quizMode,colors}:{visible:boolean;onClose:()=>void;result:any;score:number;maxScore:number;profile:Profile;quizMode:QuizMode|null;colors:Colors}){
   const sc=useRef(new Animated.Value(0.8)).current;
   useEffect(()=>{if(visible)Animated.spring(sc,{toValue:1,tension:60,friction:7,useNativeDriver:true}).start();},[visible]);
-  const share=async()=>{const sig=`\n\n━━━━━━━━━━━━━━\n💸 Fakirmetre Titan v5.0\n${profile.avatar} ${profile.name} • Sev.${profile.level} • ${profile.streak}🔥 gün\n#FakirmetreTitan`;await Share.share({message:`${result.emoji} ${result.title} — ${result.level}\n🎯 ${score}/${maxScore} puan\n\n${result.advice}${sig}`});};
+  const share=async()=>{const sig=`\n\n━━━━━━━━━━━━━━\n💸 Fakirmetre\n${profile.avatar} ${profile.name} • Sev.${profile.level} • ${profile.streak}🔥 gün\n#FakirmetreTitan`;await Share.share({message:`${result.emoji} ${result.title} — ${result.level}\n🎯 ${score}/${maxScore} puan\n\n${result.advice}${sig}`});};
   if(!visible||!quizMode) return null;
   return <Modal transparent animationType="fade" visible onRequestClose={onClose}><View style={[s.overlay,{backgroundColor:colors.overlay}]}><Animated.View style={{width:'90%',backgroundColor:colors.surface,borderRadius:28,borderWidth:2,borderColor:result.color,padding:24,alignItems:'center',transform:[{scale:sc}]}}><Text style={{fontSize:60}}>{result.emoji}</Text><View style={[s.levelBadge,{borderColor:result.color,backgroundColor:result.color+'18',alignSelf:'center',marginTop:8}]}><Text style={[s.levelBadgeTxt,{color:result.color}]}>{result.level}</Text></View><Text style={[s.resultTitle,{color:result.color}]}>{result.title}</Text><Text style={{fontSize:13,color:colors.subText,textAlign:'center',marginTop:6,marginBottom:12}}>{result.desc}</Text><View style={{flexDirection:'row',gap:8,marginBottom:16}}><View style={[s.xpBadge,{backgroundColor:colors.primary+'22',borderColor:colors.primary}]}><Text style={{fontSize:12,fontWeight:'900',color:colors.primary}}>🎯 {score}/{maxScore}</Text></View><View style={[s.xpBadge,{backgroundColor:colors.warning+'22',borderColor:colors.warning}]}><Text style={{fontSize:12,fontWeight:'900',color:colors.warning}}>🔥 {profile.streak} gün</Text></View></View><PressBtn onPress={share} style={[s.mainBtn,{backgroundColor:result.color,width:'100%'}]}><Text style={s.mainBtnTxt}>📤 Paylaş</Text></PressBtn><TouchableOpacity onPress={onClose} style={{marginTop:10}}><Text style={{color:colors.subText}}>Kapat</Text></TouchableOpacity></Animated.View></View></Modal>;
 }
@@ -1525,7 +1528,7 @@ function AiAdvisor({visible,onClose,profile,history,premium,colors,usageCount,on
     const nextCount=usageCount+1;
     onUsageChange(nextCount);
     Analytics.log('ai_chat_sent',{premium,count:nextCount});
-    const sys=`Sen Fakirmetre Titan AI finans danışmanısın. Kullanıcı: ${profile.name}, ${profile.zodiac} burcu, Sev.${profile.level}, ${profile.streak} gün seri. Son quizler: ${history.slice(0,3).map(h=>h.quizMode+':'+h.title).join(', ')||'yok'}. Kısa (3-5 cümle), pratik, Türkçe, emoji kullan.`;
+    const sys=`Sen Fakirmetre AI finans danışmanısın. Kullanıcı: ${profile.name}, ${profile.zodiac} burcu, Sev.${profile.level}, ${profile.streak} gün seri. Son quizler: ${history.slice(0,3).map(h=>h.quizMode+':'+h.title).join(', ')||'yok'}. Kısa (3-5 cümle), pratik, Türkçe, emoji kullan.`;
     try{
       const result=await askFinanceAssistant(userText, profile, history, sys);
       const suffix=result.mode==='offline' ? '\n\n🛠️ Demo modu: yerel finans önerisi gösteriliyor.' : '';
@@ -1670,7 +1673,7 @@ function CloudSync({visible,onClose,profile,history,settings,meals,expenses,savi
   },[visible,lastBackupAt]);
   const exportData=()=>{
     const d=buildBackupSnapshot(profile, history, settings, 'manual-export', { meals, expenses, savingsGoals });
-    Share.share({message:'Fakirmetre Titan Verilerim\n\n'+JSON.stringify(d,null,2),title:'Fakirmetre Yedek'});
+    Share.share({message:'Fakirmetre Verilerim\n\n'+JSON.stringify(d,null,2),title:'Fakirmetre Yedek'});
     Analytics.log('data_exported',{historyCount:history.length});
   };
   const applyImport = (raw:any) => {
@@ -1709,17 +1712,17 @@ function CloudSync({visible,onClose,profile,history,settings,meals,expenses,savi
 const s=StyleSheet.create({
   safe:{flex:1},container:{flex:1,paddingHorizontal:12,paddingTop:4},
   header:{flexDirection:'row',alignItems:'center',paddingBottom:6,paddingTop:2,gap:8},
-  appTitle:{fontSize:20,fontWeight:'900',letterSpacing:0.2},
+  appTitle:{fontSize:22,fontWeight:'900',letterSpacing:0.2},
   appSub:{fontSize:10,marginTop:1,fontWeight:'600'},
   scrollContent:{gap:12,paddingBottom:20},
   card:{borderWidth:1,borderRadius:24,padding:16,elevation:3,shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.1,shadowRadius:6},
   powerMark:{fontSize:28,textAlign:'center',marginBottom:2},
-  heroTitle:{textAlign:'center',fontSize:24,fontWeight:'900'},
+  heroTitle:{textAlign:'center',fontSize:27,fontWeight:'900'},
   statsRow:{flexDirection:'row',gap:8,marginTop:14},
   statBlock:{flex:1,borderWidth:1,borderRadius:14,paddingVertical:12,alignItems:'center'},
   statVal:{fontSize:15,fontWeight:'900'},
   statLbl:{marginTop:2,fontSize:10,fontWeight:'700'},
-  sectionTitle:{fontSize:17,fontWeight:'900',marginBottom:10},
+  sectionTitle:{fontSize:19,fontWeight:'900',marginBottom:10},
   rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
   searchBar:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:13,paddingHorizontal:11,paddingVertical:9,marginBottom:10},
   searchInput:{flex:1,fontSize:13,paddingVertical:0},
@@ -1756,7 +1759,7 @@ const s=StyleSheet.create({
   tabItem:{flex:1,borderWidth:1,borderRadius:14,paddingVertical:8,alignItems:'center',justifyContent:'center',position:'relative'},
   tabDot:{position:'absolute',top:4,width:4,height:4,borderRadius:2},
   tabIcon:{fontSize:15,marginBottom:1},
-  tabLabel:{fontSize:9,fontWeight:'800'},
+  tabLabel:{fontSize:11,fontWeight:'800'},
 });
 
 const sl=StyleSheet.create({

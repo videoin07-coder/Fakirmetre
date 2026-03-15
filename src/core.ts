@@ -419,6 +419,17 @@ export const CALORIE_DB: {name:string; emoji:string; calories:number; unit:strin
   {name:'Kadayıf',emoji:'🍯',calories:280,unit:'1 porsiyon',category:'Tatlı',price:30},
   {name:'Sütlaç',emoji:'🍚',calories:180,unit:'1 kase',category:'Tatlı',price:25},
   {name:'Dondurma',emoji:'🍦',calories:207,unit:'1 top',category:'Tatlı',price:25},
+  {name:'Sucuk (ızgara)',emoji:'🌭',calories:180,unit:'3 dilim',category:'Kahvaltı',price:15},
+  {name:'Gözleme',emoji:'🫓',calories:350,unit:'1 adet',category:'Kahvaltı',price:35},
+  {name:'Ezogelin çorbası',emoji:'🍲',calories:145,unit:'1 kase',category:'Çorba',price:28},
+  {name:'Mantı',emoji:'🥟',calories:350,unit:'1 porsiyon',category:'Ana Yemek',price:60},
+  {name:'Balık ızgara',emoji:'🐟',calories:200,unit:'150g',category:'Ana Yemek',price:90},
+  {name:'Karnıyarık',emoji:'🍆',calories:280,unit:'1 porsiyon',category:'Ana Yemek',price:35},
+  {name:'Tost',emoji:'🥪',calories:280,unit:'1 adet',category:'Fast Food',price:45},
+  {name:'Köfte ekmek',emoji:'🌮',calories:380,unit:'1 adet',category:'Fast Food',price:50},
+  {name:'Karpuz',emoji:'🍉',calories:85,unit:'2 dilim',category:'Meyve',price:10},
+  {name:'Kiraz',emoji:'🍒',calories:97,unit:'100g',category:'Meyve',price:25},
+  {name:'Künefe',emoji:'🧇',calories:420,unit:'1 porsiyon',category:'Tatlı',price:50},
 ];
 
 // ─── BÜTÇE YEMEĞİ ÖNERİLERİ ──────────────────────────────────────────────────
@@ -513,6 +524,8 @@ export const QUIZZES:Record<QuizMode,{title:string;icon:string;color:string;desc
       {text:'Fatura günleri yaklaştığında için sıkışıyor mu?',yes:12,no:0},
       {text:'Dışarıda yemek yedikten sonra "evde yeseydim keşke" diyor musun?',yes:9,no:0},
       {text:'Para yüzünden uyku sorunun olduğu günler oluyor mu?',yes:13,no:0},
+      {text:'Restoran menüsünde önce fiyata mı bakıyorsun?',yes:10,no:0},
+      {text:'Ay ortasında bu ay kötü geçiyor dediğin oluyor mu?',yes:12,no:0},
     ],
   },
   tasarruf:{
@@ -527,6 +540,8 @@ export const QUIZZES:Record<QuizMode,{title:string;icon:string;color:string;desc
       {text:'Alışveriş öncesi liste hazırlıyor musun?',yes:0,no:9},
       {text:'"Bir dahaki maaşa kalır" dediğin harcamalar var mı?',yes:11,no:0},
       {text:'Son ayda bütçeni aştın mı?',yes:13,no:0},
+      {text:'Düzenli yatırım yapıyor musun?',yes:0,no:12},
+      {text:'Kredi kartı borcunu her ay tam ödüyor musun?',yes:0,no:11},
     ],
   },
   harcama:{
