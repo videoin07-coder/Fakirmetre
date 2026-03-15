@@ -73,7 +73,10 @@ import { getTheme, type Colors } from './src/theme';
 import { EXPENSE_CATEGORIES, createExpense, createSavingsGoal, getCategoryDistribution, getGoalProgress, getMonthlyExpenseTotal, getRecentExpenseAverage, isSameMonth, summarizeExpenses } from './src/features/finance';
 import { loadPersistedAppData, resetPersistedAppData, savePersistedAppData } from './src/services/persistence';
 import Svg, { Circle } from 'react-native-svg';
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as Notifications from 'expo-notifications';
+GoogleSignin.configure({webClientId:'788519844963-llgv3f0tdeo9q2bbfpabjj4ni2sn6prn.apps.googleusercontent.com'});
 import * as TaskManager from 'expo-task-manager';
 
 // ── Bildirim davranışı ayarla ─────────────────────────────────
@@ -425,6 +428,8 @@ function PinSetupModal({visible,onClose,onSave,colors}:{visible:boolean;onClose:
 export default function App(){
   const [appState,setAppState]=useState<AppState>('splash');
   const [welcomePopup,setWelcomePopup]=useState(false);
+  const [firebaseUser,setFirebaseUser]=useState<any>(null);
+  const [authLoading,setAuthLoading]=useState(false);
   const [globalSearch,setGlobalSearch]=useState('');
   const [searchVisible,setSearchVisible]=useState(false);
   const [aboutVisible,setAboutVisible]=useState(false);
@@ -575,6 +580,28 @@ export default function App(){
   // 📊 Analytics kullanıcı prop
   useEffect(()=>{Analytics.setProp('level',String(profile.level));Analytics.setProp('premium',premium);Analytics.setProp('zodiac',profile.zodiac);},[profile.level,premium,profile.zodiac]);
 
+
+
+  useEffect(()=>{
+    const subscriber=auth().onAuthStateChanged(user=>{setFirebaseUser(user);});
+    return subscriber;
+  },[]);
+  const signInWithGoogle=async()=>{
+    try{
+      setAuthLoading(true);
+      await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog:true});
+      const {data}=await GoogleSignin.signIn();
+      const googleCredential=auth.GoogleAuthProvider.credential(data?.idToken??'');
+      await auth().signInWithCredential(googleCredential);
+      addNotif('Google ile Giris Yapildi!','Hesabin Firebase ile senkronize edildi.','🔐');
+    }catch(e:any){
+      if(e.code!=='SIGN_IN_CANCELLED'){Alert.alert('Hata','Google ile giris yapilamadi.');}
+    }finally{setAuthLoading(false);}
+  };
+  const signOut=async()=>{
+    try{await GoogleSignin.signOut();await auth().signOut();addNotif('Cikis Yapildi','Hesabindan guvenli cikis yapildi.','👋');}
+    catch(e:any){Alert.alert('Hata','Cikis yapilamadi.');}
+  };
 
   // ── Push bildirim izni al ──────────────────────────────────
   useEffect(()=>{
@@ -1642,6 +1669,10 @@ export default function App(){
           {zodiacSigns.map(z=><TouchableOpacity key={z} onPress={()=>setProfile(p=>({...p,zodiac:z}))} style={[s.zodiacChip,{backgroundColor:profile.zodiac===z?colors.primary:colors.surfaceSoft,borderColor:profile.zodiac===z?colors.primary:colors.border}]}><Text style={{fontSize:10}}>{zodiacEmojis[z]}</Text><Text style={{fontSize:10,fontWeight:'800',color:profile.zodiac===z?'#fff':colors.text}}>{z}</Text></TouchableOpacity>)}
         </View>
       </AccordionCard>
+      <GlassCard colors={colors} delay={95}>
+        <Text style={[s.sectionTitle,{color:colors.text}]}>🔐 Hesap</Text>
+        {firebaseUser?(<View><View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}><Text style={{fontSize:36}}>👤</Text><View style={{flex:1}}><Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text><Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text><Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text></View></View><TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}><Text style={s.mainBtnTxt}>Cikis Yap</Text></TouchableOpacity></View>):(<View><Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text><TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}><Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text></TouchableOpacity></View>)}
+      </GlassCard>
       <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
         <View style={[s.settingRow,{borderBottomColor:colors.border}]}>
           <View style={{flex:1,paddingRight:12}}>

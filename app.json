@@ -17,10 +17,16 @@
         "backgroundColor": "#0a7a8a"
       }
     },
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin"
+    ],
     "extra": {
       "eas": {
-        "projectId": "452c2763-322a-4d4a-9e02-061ff1d10dec"
+        "projectId": "520c2cb3-a14c-4c52-8b6e-5fc332e705e8"
       }
-    }
+    },
+    "owner": "musa7373"
   }
 }
