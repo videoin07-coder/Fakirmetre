@@ -72,6 +72,7 @@ import {
 import { getTheme, type Colors } from './src/theme';
 import { EXPENSE_CATEGORIES, createExpense, createSavingsGoal, getCategoryDistribution, getGoalProgress, getMonthlyExpenseTotal, getRecentExpenseAverage, isSameMonth, summarizeExpenses } from './src/features/finance';
 import { loadPersistedAppData, resetPersistedAppData, savePersistedAppData } from './src/services/persistence';
+import Svg, { Circle } from 'react-native-svg';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 
@@ -1250,17 +1251,55 @@ export default function App(){
       {/* Sezon Görevleri */}
       <GlassCard colors={colors} delay={90}>
         <Text style={[s.sectionTitle,{color:colors.text}]}>🎭 Sezon Görevleri</Text>
-        {seasonChallenges.slice(0,4).map((ch:SeasonChallenge)=>(
-          <View key={ch.id} style={{marginBottom:10}}>
-            <View style={s.rowBetween}>
-              <View style={{flexDirection:'row',gap:8,alignItems:'center',flex:1}}>
-                <Text style={{fontSize:16}}>{ch.icon}</Text>
-                <View style={{flex:1}}><Text style={{fontSize:12,fontWeight:'900',color:ch.done?colors.success:colors.text}}>{ch.title}{ch.done?' ✓':''}</Text><Text style={{fontSize:10,color:colors.subText}}>{ch.desc}</Text></View>
+        {/* Yuvarlak grafik + liste */}
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:8}}>
+          {seasonChallenges.slice(0,4).map((ch:SeasonChallenge)=>{
+            const pct=Math.min(100,Math.round((ch.current/ch.target)*100));
+            const r=28;
+            const circ=2*Math.PI*r;
+            const offset=circ*(1-pct/100);
+            return (
+              <View key={ch.id} style={{alignItems:'center',width:'22%'}}>
+                <View style={{width:64,height:64,alignItems:'center',justifyContent:'center'}}>
+                  <Svg width="64" height="64" viewBox="0 0 64 64">
+                    <Circle cx="32" cy="32" r={r} fill="none" stroke={colors.surfaceSoft} strokeWidth="5"/>
+                    <Circle cx="32" cy="32" r={r} fill="none"
+                      stroke={ch.done?colors.success:colors.primary}
+                      strokeWidth="5"
+                      strokeDasharray={circ}
+                      strokeDashoffset={offset}
+                      strokeLinecap="round"
+                      transform="rotate(-90 32 32)"
+                    />
+                  </Svg>
+                  <View style={{position:'absolute',alignItems:'center'}}>
+                    <Text style={{fontSize:16}}>{ch.icon}</Text>
+                    <Text style={{fontSize:9,fontWeight:'900',color:ch.done?colors.success:colors.primary}}>{pct}%</Text>
+                  </View>
+                </View>
+                <Text style={{fontSize:9,fontWeight:'800',color:ch.done?colors.success:colors.text,textAlign:'center',marginTop:4}}>{ch.title}{ch.done?' ✓':''}</Text>
+                <Text style={{fontSize:8,color:colors.subText,textAlign:'center'}}>{ch.current}/{ch.target}</Text>
               </View>
-              <View style={[s.xpBadge,{backgroundColor:colors.primary+'22',borderColor:colors.primary}]}><Text style={{fontSize:10,fontWeight:'900',color:colors.primary}}>+{ch.xp}XP</Text></View>
+            );
+          })}
+        </View>
+        {seasonChallenges.slice(0,4).map((ch:SeasonChallenge)=>(
+          <View key={ch.id+'bar'} style={{marginBottom:8}}>
+            <View style={s.rowBetween}>
+              <View style={{flexDirection:'row',gap:6,alignItems:'center',flex:1}}>
+                <Text style={{fontSize:13}}>{ch.icon}</Text>
+                <View style={{flex:1}}>
+                  <Text style={{fontSize:11,fontWeight:'900',color:ch.done?colors.success:colors.text}}>{ch.title}{ch.done?' ✓':''}</Text>
+                  <Text style={{fontSize:10,color:colors.subText}}>{ch.desc}</Text>
+                </View>
+              </View>
+              <View style={[s.xpBadge,{backgroundColor:colors.primary+'22',borderColor:colors.primary}]}>
+                <Text style={{fontSize:9,fontWeight:'900',color:colors.primary}}>+{ch.xp}XP</Text>
+              </View>
             </View>
-            <View style={{marginTop:4}}><AnimBar value={Math.min(100,(ch.current/ch.target)*100)} color={ch.done?colors.success:colors.primary} bg={colors.surfaceSoft} height={4}/></View>
-            <Text style={{fontSize:9,color:colors.subText,marginTop:2}}>{ch.current}/{ch.target}</Text>
+            <View style={{marginTop:4}}>
+              <AnimBar value={Math.min(100,(ch.current/ch.target)*100)} color={ch.done?colors.success:colors.primary} bg={colors.surfaceSoft} height={6}/>
+            </View>
           </View>
         ))}
       </GlassCard>
