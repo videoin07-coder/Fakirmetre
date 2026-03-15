@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import {
-  Alert, Animated, Easing, KeyboardAvoidingView, Modal,
+  Alert, Animated, Easing, KeyboardAvoidingView, Linking, Modal,
   Platform, SafeAreaView, ScrollView, Share,
   StatusBar, StyleSheet, Switch, Text, TextInput,
   TouchableOpacity, View, useWindowDimensions,
@@ -221,19 +221,19 @@ function AccordionCard({title,defaultOpen=false,colors,delay=0,children}:{title:
 }
 
 
-function GlassCard({children,colors,delay=0,style}:{children:React.ReactNode;colors:Colors;delay?:number;style?:any}){
+const GlassCard=memo(function GlassCard({children,colors,delay=0,style}:{children:React.ReactNode;colors:Colors;delay?:number;style?:any}){
   const op=useRef(new Animated.Value(0)).current;
   const ty=useRef(new Animated.Value(14)).current;
   useEffect(()=>{Animated.parallel([Animated.timing(op,{toValue:1,duration:480,delay,easing:Easing.out(Easing.cubic),useNativeDriver:true}),Animated.timing(ty,{toValue:0,duration:480,delay,easing:Easing.out(Easing.back(1.2)),useNativeDriver:true})]).start();},[]);
   return <Animated.View style={[s.card,{backgroundColor:colors.surface,borderColor:colors.border,opacity:op,transform:[{translateY:ty}]},style]}>{children}</Animated.View>;
-}
+});
 
-function StarField({enabled,color}:{enabled:boolean;color:string}){
+const StarField=memo(function StarField({enabled,color}:{enabled:boolean;color:string}){
   const {width,height}=useWindowDimensions();
   const stars=useMemo(()=>Array.from({length:32}).map((_,i)=>({id:i,left:Math.random()*width,top:Math.random()*(height*0.8),size:Math.random()*2.5+1,duration:1900+Math.random()*2400,delay:Math.random()*1600})),[width,height]);
   if(!enabled) return null;
   return <View pointerEvents="none" style={StyleSheet.absoluteFill}>{stars.map(st=><TwinkStar key={st.id} star={st} color={color}/>)}</View>;
-}
+});
 function TwinkStar({star,color}:{star:any;color:string}){
   const op=useRef(new Animated.Value(0.15)).current;
   const sc=useRef(new Animated.Value(0.8)).current;
@@ -241,10 +241,10 @@ function TwinkStar({star,color}:{star:any;color:string}){
   return <Animated.View style={{position:'absolute',left:star.left,top:star.top,width:star.size,height:star.size,borderRadius:99,backgroundColor:color,opacity:op,transform:[{scale:sc}]}}/>;
 }
 
-function PressBtn({onPress,style,children}:{onPress:()=>void;style:any;children:React.ReactNode}){
+const PressBtn=memo(function PressBtn({onPress,style,children}:{onPress:()=>void;style:any;children:React.ReactNode}){
   const sc=useRef(new Animated.Value(1)).current;
   return <Animated.View style={{transform:[{scale:sc}]}}><TouchableOpacity style={style} onPressIn={()=>Animated.spring(sc,{toValue:0.95,useNativeDriver:true,speed:60}).start()} onPressOut={()=>{Animated.spring(sc,{toValue:1,useNativeDriver:true,speed:25}).start();onPress();}} activeOpacity={1}>{children}</TouchableOpacity></Animated.View>;
-}
+});
 
 function AnimBar({value,color,bg,delayed=false,height=10}:{value:number;color:string;bg:string;delayed?:boolean;height?:number}){
   const anim=useRef(new Animated.Value(0)).current;
@@ -425,6 +425,8 @@ function PinSetupModal({visible,onClose,onSave,colors}:{visible:boolean;onClose:
 export default function App(){
   const [appState,setAppState]=useState<AppState>('splash');
   const [welcomePopup,setWelcomePopup]=useState(false);
+  const [globalSearch,setGlobalSearch]=useState('');
+  const [searchVisible,setSearchVisible]=useState(false);
   const [aboutVisible,setAboutVisible]=useState(false);
   const [activeTab,setActiveTab]=useState<TabKey>('home');
   const [settings,setSettings]=useState<SettingsState>(DEFAULT_SETTINGS);
@@ -530,6 +532,18 @@ export default function App(){
     const matchesSearch = q==='' ? true : item.title.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
     return matchesFilter && matchesSearch;
   }),[expenses,expenseSearch,expenseFilter]);
+
+
+  const globalSearchResults=useMemo(()=>{
+    const q=globalSearch.trim().toLowerCase();
+    if(q.length<2) return [];
+    const results:any[]=[];
+    expenses.filter(e=>e.title.toLowerCase().includes(q)||e.category.toLowerCase().includes(q)).slice(0,5).forEach(e=>results.push({type:'expense',icon:'💸',title:e.title,sub:`${e.category} • ₺${e.amount.toFixed(0)}`,action:()=>{setActiveTab('kitchen');setSearchVisible(false);}}));
+    incomes.filter(i=>i.title.toLowerCase().includes(q)||i.category.toLowerCase().includes(q)).slice(0,5).forEach(i=>results.push({type:'income',icon:'💵',title:i.title,sub:`${i.category} • ₺${i.amount.toFixed(0)}`,action:()=>{setActiveTab('kitchen');setSearchVisible(false);}}));
+    FOOD_DB.filter(f=>f.name.toLowerCase().includes(q)).slice(0,4).forEach(f=>results.push({type:'food',icon:f.emoji,title:f.name,sub:`${f.calories} kcal • ₺${f.price}`,action:()=>{setActiveTab('kitchen');setSearchVisible(false);}}));
+    DREAM_DATA.filter(d=>d.keyword.includes(q)||d.meaning.toLowerCase().includes(q)).slice(0,3).forEach(d=>results.push({type:'dream',icon:d.emoji,title:d.keyword,sub:'Ruya Tabiri',action:()=>{setActiveTab('astro');setSearchVisible(false);}}));
+    return results;
+  },[globalSearch,expenses,incomes]);
 
   const headerGlow=useRef(new Animated.Value(0.7)).current;
   const questionFade=useRef(new Animated.Value(1)).current;
@@ -761,7 +775,7 @@ export default function App(){
 
   // ─── ASTRO TAB ─────────────────────────────────────────────────────────────
   const renderAstro=()=>(
-    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
       {/* Sub Tabs */}
       <View style={[s.subTabRow,{backgroundColor:colors.surfaceSoft,borderColor:colors.border}]}>
         {(['burç','rüya'] as const).map(t=><TouchableOpacity key={t} onPress={()=>setAstroTab(t)} style={[s.subTab,{backgroundColor:astroTab===t?colors.primary:'transparent'}]}><Text style={{fontSize:13,fontWeight:'900',color:astroTab===t?'#fff':colors.subText}}>{t==='burç'?'🔮 Burç Yorumu':'🌙 Rüya Tabiri'}</Text></TouchableOpacity>)}
@@ -849,7 +863,7 @@ export default function App(){
 
   // ─── KITCHEN TAB ───────────────────────────────────────────────────────────
   const renderKitchen=()=>(
-    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" removeClippedSubviews={true}>
       {/* Sub Tabs */}
       <View style={[s.subTabRow,{backgroundColor:colors.surfaceSoft,borderColor:colors.border}]}>
         {(['kalori','butce','takip','gelir'] as const).map(t=><TouchableOpacity key={t} onPress={()=>setKitchenTab(t)} style={[s.subTab,{backgroundColor:kitchenTab===t?colors.primary:'transparent'}]}><Text style={{fontSize:13,fontWeight:'900',color:kitchenTab===t?'#fff':colors.subText}}>{t==='kalori'?'🥗 Kalori':t==='butce'?'💰 Bütçe':t==='takip'?'📒 Gider':'💵 Gelir'}</Text></TouchableOpacity>)}
@@ -1196,7 +1210,7 @@ export default function App(){
 
   // ─── HOME TAB ──────────────────────────────────────────────────────────────
   const renderHome=()=>(
-    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
       <GlassCard colors={colors}>
         <Animated.View style={{opacity:headerGlow}}><Text style={[s.powerMark,{color:colors.primary}]}>✦</Text></Animated.View>
         <Text style={[s.heroTitle,{color:colors.text}]}>SKOR</Text>
@@ -1335,7 +1349,7 @@ export default function App(){
   // ─── QUIZ TAB ──────────────────────────────────────────────────────────────
   const renderQuiz=()=>{
     if(!activeQuiz) return (
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
         <GlassCard colors={colors}><Text style={[s.sectionTitle,{color:colors.text}]}>🎯 Quiz Seç</Text><Text style={{fontSize:13,color:colors.subText}}>4 farklı finans testi. Her quiz tamamlandığında XP kazanırsın!</Text></GlassCard>
         {(Object.keys(QUIZZES) as QuizMode[]).map((mode,i)=>{
           const q=QUIZZES[mode];const done=history.filter(h=>h.quizMode===mode).length;
@@ -1344,7 +1358,7 @@ export default function App(){
       </ScrollView>
     );
     return (
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
         <GlassCard colors={colors}>
           <View style={s.rowBetween}>
             <TouchableOpacity onPress={resetQuiz}><Text style={{color:colors.subText,fontSize:13,fontWeight:'800'}}>← Geri</Text></TouchableOpacity>
@@ -1413,7 +1427,7 @@ export default function App(){
     };
     const toggleLike=(id:string)=>setCommunityPosts(p=>p.map(post=>post.id===id?{...post,likes:post.likedByMe?post.likes-1:post.likes+1,likedByMe:!post.likedByMe}:post));
     return (
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" removeClippedSubviews={true}>
         {/* Header */}
         <GlassCard colors={colors}>
           <View style={s.rowBetween}>
@@ -1581,7 +1595,7 @@ export default function App(){
 
   // ─── SETTINGS TAB ──────────────────────────────────────────────────────────
   const renderSettings=()=>(
-    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
       {premium==='free'&&<TouchableOpacity onPress={()=>setPremiumModalVisible(true)} style={[s.card,{backgroundColor:colors.gold+'18',borderColor:colors.gold,borderWidth:2,padding:16,flexDirection:'row',alignItems:'center',gap:12}]}>
         <Text style={{fontSize:28}}>💎</Text>
         <View style={{flex:1}}><Text style={{fontSize:16,fontWeight:'900',color:colors.gold}}>Premium&apos;a Geç</Text><Text style={{fontSize:12,color:colors.subText}}>AI Danışman, Turnuva, Cloud Sync ve daha fazlası</Text></View>
@@ -1667,6 +1681,8 @@ export default function App(){
           {title:'☁️ Yedekleme',desc:'Veri yedekleme ve geri yükleme',action:()=>setCloudSyncVisible(true)},
           {title:'🔔 Bildirimler',desc:`${unreadNotifs} okunmamış`,action:()=>setNotificationModalVisible(true)},
           {title:'📺 Reklam İzle',desc:'+100 XP ücretsiz kazan',action:()=>setRewardedAdVisible(true)},
+          {title:'📧 Geri Bildirim',desc:'Öneri ve şikayetlerinizi bildirin',action:()=>{Linking.openURL('mailto:destek@fakirmetre.com?subject=Fakirmetre%20Geri%20Bildirim').catch(()=>Alert.alert('Hata','Mail uygulaması açılamadı.'));}},
+          {title:'⭐ Uygulamayı Değerlendir',desc:'Play Store da puan ver',action:()=>{Linking.openURL('market://details?id=com.fakirmetre').catch(()=>Alert.alert('Hata','Play Store açılamadı.'));}},
         ].map((item,i,arr)=>(
           <TouchableOpacity key={item.title} onPress={item.action} style={[s.settingRow,{borderBottomColor:i<arr.length-1?colors.border:'transparent'}]}>
             <View style={{flex:1}}><Text style={{fontSize:14,fontWeight:'800',color:colors.text}}>{item.title}</Text><Text style={{fontSize:12,color:colors.subText}}>{item.desc}</Text></View>
@@ -1734,18 +1750,21 @@ export default function App(){
             </View>
             <Text style={[s.appSub,{color:colors.subText}]}>{profile.avatar} {profile.name} • Sev.{profile.level} • {profile.xp}XP</Text>
           </View>
+          <TouchableOpacity onPress={()=>setSearchVisible(true)} style={[s.xpBadge,{backgroundColor:colors.surfaceSoft,borderColor:colors.border,marginRight:6}]}>
+            <Text style={{fontSize:14}}>🔍</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={()=>setNotificationModalVisible(true)} style={[s.xpBadge,{backgroundColor:unreadNotifs>0?colors.danger+'22':colors.primary+'22',borderColor:unreadNotifs>0?colors.danger:colors.primary}]}>
             <Text style={{fontSize:10,fontWeight:'900',color:unreadNotifs>0?colors.danger:colors.primary}}>{unreadNotifs>0?`🔔${unreadNotifs}`:`🔥${profile.streak}`}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{flex:1}}>
-          {activeTab==='home'&&renderHome()}
-          {activeTab==='quiz'&&renderQuiz()}
-          {activeTab==='astro'&&renderAstro()}
-          {activeTab==='kitchen'&&renderKitchen()}
-          {activeTab==='topluluk'&&renderTopluluk()}
-          {activeTab==='settings'&&renderSettings()}
+          <View style={{flex:1,display:activeTab==='home'?'flex':'none'}}>{renderHome()}</View>
+          <View style={{flex:1,display:activeTab==='quiz'?'flex':'none'}}>{renderQuiz()}</View>
+          <View style={{flex:1,display:activeTab==='astro'?'flex':'none'}}>{renderAstro()}</View>
+          <View style={{flex:1,display:activeTab==='kitchen'?'flex':'none'}}>{renderKitchen()}</View>
+          <View style={{flex:1,display:activeTab==='topluluk'?'flex':'none'}}>{renderTopluluk()}</View>
+          <View style={{flex:1,display:activeTab==='settings'?'flex':'none'}}>{renderSettings()}</View>
         </View>
 
         <View style={[s.tabBar,{backgroundColor:colors.tabBg,borderColor:colors.border}]}>
