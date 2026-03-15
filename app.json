@@ -1,0 +1,19 @@
+{
+  "name": "Fakirmetre",
+  "displayName": "Fakirmetre",
+  "expo": {
+    "name": "Fakirmetre",
+    "slug": "fakirmetre",
+    "version": "1.0.0",
+    "icon": "./assets/icon.png",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.fakirmetre",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0a7a8a"
+      }
+    }
+  }
+}
