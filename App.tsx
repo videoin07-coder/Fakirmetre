@@ -425,6 +425,7 @@ function PinSetupModal({visible,onClose,onSave,colors}:{visible:boolean;onClose:
 export default function App(){
   const [appState,setAppState]=useState<AppState>('splash');
   const [welcomePopup,setWelcomePopup]=useState(false);
+  const [aboutVisible,setAboutVisible]=useState(false);
   const [activeTab,setActiveTab]=useState<TabKey>('home');
   const [settings,setSettings]=useState<SettingsState>(DEFAULT_SETTINGS);
   const [profile,setProfile]=useState<Profile>(DEFAULT_PROFILE);
@@ -1198,7 +1199,7 @@ export default function App(){
     <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
       <GlassCard colors={colors}>
         <Animated.View style={{opacity:headerGlow}}><Text style={[s.powerMark,{color:colors.primary}]}>✦</Text></Animated.View>
-        <Text style={[s.heroTitle,{color:colors.text}]}>Fakirmetre</Text>
+        <Text style={[s.heroTitle,{color:colors.text}]}>SKOR</Text>
         <View style={{flexDirection:'row',justifyContent:'center',gap:8,marginTop:4}}>
           <View style={[s.xpBadge,{backgroundColor:colors.primary+'22',borderColor:colors.primary}]}><Text style={{fontSize:11,fontWeight:'900',color:colors.primary}}>⚡ Sev. {profile.level}</Text></View>
           <View style={[s.xpBadge,{backgroundColor:colors.warning+'22',borderColor:colors.warning}]}><Text style={{fontSize:11,fontWeight:'900',color:colors.warning}}>🔥 {profile.streak} gün</Text></View>
@@ -1673,6 +1674,16 @@ export default function App(){
           </TouchableOpacity>
         ))}
       </AccordionCard>
+      <GlassCard colors={colors} delay={125}>
+        <TouchableOpacity onPress={()=>setAboutVisible(true)} style={{flexDirection:"row",alignItems:"center",gap:12}}>
+          <Text style={{fontSize:32}}>💸</Text>
+          <View style={{flex:1}}>
+            <Text style={{fontSize:16,fontWeight:"900",color:colors.text}}>Hakkinda</Text>
+            <Text style={{fontSize:12,color:colors.subText}}>Uygulama bilgileri ve ozellikler</Text>
+          </View>
+          <Text style={{fontSize:18,color:colors.primary}}>→</Text>
+        </TouchableOpacity>
+      </GlassCard>
     </ScrollView>
   );
 
@@ -1696,6 +1707,7 @@ export default function App(){
       <View style={[StyleSheet.absoluteFillObject,{backgroundColor:colors.backgroundTop,height:'42%',top:EXTRA_TOP}]}/>
       <StarField enabled={settings.starsEnabled} color={colors.star}/>
 {welcomePopup&&<Modal transparent animationType="fade" visible onRequestClose={()=>setWelcomePopup(false)}><View style={[s.overlay,{backgroundColor:colors.overlay}]}><View style={{width:"88%",backgroundColor:colors.surface,borderRadius:28,borderWidth:1.5,borderColor:colors.primary,padding:24,alignItems:"center"}}><Text style={{fontSize:56,marginBottom:8}}>💸</Text><Text style={{fontSize:22,fontWeight:"900",color:colors.text,textAlign:"center",marginBottom:8}}>Fakirmetre Hos Geldin!</Text><Text style={{fontSize:15,color:colors.subText,textAlign:"center",lineHeight:22,marginBottom:20}}>Fakirlik skorunu ogrenmeye hazir misin?</Text><TouchableOpacity onPress={()=>{setWelcomePopup(false);setActiveTab("quiz");}} style={[s.mainBtn,{backgroundColor:colors.primary,width:"100%",marginBottom:10}]}><Text style={s.mainBtnTxt}>Skoru Olustur!</Text></TouchableOpacity><TouchableOpacity onPress={()=>setWelcomePopup(false)}><Text style={{fontSize:13,color:colors.subText}}>Simdi degil</Text></TouchableOpacity></View></View></Modal>}
+{aboutVisible&&<Modal transparent animationType="fade" visible onRequestClose={()=>setAboutVisible(false)}><View style={[s.overlay,{backgroundColor:colors.overlay}]}><View style={{width:"92%",backgroundColor:colors.surface,borderRadius:28,borderWidth:1.5,borderColor:colors.primary,padding:24}}><View style={{alignItems:"center",marginBottom:16}}><Text style={{fontSize:52}}>💸</Text><Text style={{fontSize:22,fontWeight:"900",color:colors.text,marginTop:8}}>Fakirmetre</Text><Text style={{fontSize:12,color:colors.primary,fontWeight:"800",marginTop:4}}>v5.0 Kisisel Finans Asistani</Text></View><View style={{gap:10,marginBottom:20}}><View style={[s.infoBox,{backgroundColor:colors.surfaceSoft,borderColor:colors.border,marginTop:0}]}><Text style={{fontSize:13,fontWeight:"900",color:colors.text,marginBottom:6}}>Uygulama Hakkinda</Text><Text style={{fontSize:13,color:colors.subText,lineHeight:20}}>Fakirmetre, harcamalarini takip etmeni, tasarruf hedefleri kurmanı ve finansal aliskanlıklarını gelistirmeni saglayan kisisel finans uygulamasidır.</Text></View><View style={[s.infoBox,{backgroundColor:colors.surfaceSoft,borderColor:colors.border,marginTop:0}]}><Text style={{fontSize:13,fontWeight:"900",color:colors.text,marginBottom:6}}>Ozellikler</Text><Text style={{fontSize:12,color:colors.subText,lineHeight:20}}>Gelir Gider takibi, Tasarruf hedefleri, Fakirlik skoru quizleri, Burc yorumu, Ruya tabiri, Kalori Butce takibi, AI Finans Danismani, Akilli bildirimler, Topluluk destegi</Text></View><View style={[s.infoBox,{backgroundColor:colors.primary+"11",borderColor:colors.primary+"44",marginTop:0}]}><Text style={{fontSize:13,fontWeight:"900",color:colors.primary,marginBottom:4}}>Gelistirici</Text><Text style={{fontSize:12,color:colors.subText}}>videoin07-coder - Surum 5.0.0</Text></View></View><TouchableOpacity onPress={()=>setAboutVisible(false)} style={[s.mainBtn,{backgroundColor:colors.primary,marginBottom:0}]}><Text style={s.mainBtnTxt}>Kapat</Text></TouchableOpacity></View></View></Modal>}
       <DailyRewardModal visible={dailyRewardVisible} xp={getDailyReward()} streak={profile.streak} onClose={()=>setDailyRewardVisible(false)} colors={colors}/>
       {/* 💎 Premium */}
       {premiumModalVisible&&<PremiumPaywall visible onClose={()=>setPremiumModalVisible(false)} onUpgrade={(t)=>{setPremium(t);addNotif('Premium Aktif! 💎',`${t.toUpperCase()} planına hoş geldin!`,'💎');Analytics.log('premium_purchased',{tier:t});}} colors={colors}/>}
