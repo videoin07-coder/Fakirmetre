@@ -995,6 +995,7 @@ export default function App(){
         {!budgetResult&&<GlassCard colors={colors} delay={60}>
           <Text style={[s.sectionTitle,{color:colors.text}]}>📋 Piyasa Fiyat Rehberi</Text>
           {FOOD_PRICES.map((item,j)=>(
+              <View key={j} style={[s.rowBetween,{paddingVertical:10,borderBottomWidth:1,borderBottomColor:colors.border}]}>
               <Text style={{fontSize:18}}>{item.emoji}</Text>
               <Text style={{flex:1,marginLeft:10,fontSize:14,fontWeight:'700',color:colors.text}}>{item.cat}</Text>
               <Text style={{fontSize:14,fontWeight:'900',color:colors.primary}}>{item.range}</Text>
