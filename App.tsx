@@ -1663,7 +1663,34 @@ export default function App(){
           {zodiacSigns.map(z=><TouchableOpacity key={z} onPress={()=>setProfile(p=>({...p,zodiac:z}))} style={[s.zodiacChip,{backgroundColor:profile.zodiac===z?colors.primary:colors.surfaceSoft,borderColor:profile.zodiac===z?colors.primary:colors.border}]}><Text style={{fontSize:10}}>{zodiacEmojis[z]}</Text><Text style={{fontSize:10,fontWeight:'800',color:profile.zodiac===z?'#fff':colors.text}}>{z}</Text></TouchableOpacity>)}
         </View>
       </AccordionCard>
-      <AccordionCard title="🔐 Hesap">
+  const GOOGLE_CARD = (
+    <View>
+      {firebaseUser ? (
+        <View>
+          <View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}>
+            <Text style={{fontSize:36}}>👤</Text>
+            <View style={{flex:1}}>
+              <Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text>
+              <Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text>
+              <Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}>
+            <Text style={s.mainBtnTxt}>Cikis Yap</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          <Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text>
+          <TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}>
+            <Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
+      <AccordionCard title="🔐 Hesap" colors={colors} delay={95}>
               {GOOGLE_CARD}
             </AccordionCard>
             <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
@@ -1741,32 +1768,6 @@ export default function App(){
   if(appState==='locked') return <PinLockScreen correctPin={settings.pinCode} onUnlock={()=>{setAppState('app');Analytics.log('pin_unlocked',{});}} colors={colors}/>;
   if(appState==='onboarding') return <OnboardingScreen onDone={handleOnboardingDone}/>;
 
-  const GOOGLE_CARD = (
-    <View>
-      {firebaseUser ? (
-        <View>
-          <View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}>
-            <Text style={{fontSize:36}}>👤</Text>
-            <View style={{flex:1}}>
-              <Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text>
-              <Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text>
-              <Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}>
-            <Text style={s.mainBtnTxt}>Cikis Yap</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View>
-          <Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text>
-          <TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}>
-            <Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
   return (
     <SafeAreaView style={[s.safe,{backgroundColor:colors.background,paddingTop:EXTRA_TOP}]}>
       <StatusBar barStyle={settings.darkMode?'light-content':'dark-content'} backgroundColor={colors.backgroundTop} translucent={IS_ANDROID}/>
