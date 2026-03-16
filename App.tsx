@@ -1663,7 +1663,7 @@ export default function App(){
           {zodiacSigns.map(z=><TouchableOpacity key={z} onPress={()=>setProfile(p=>({...p,zodiac:z}))} style={[s.zodiacChip,{backgroundColor:profile.zodiac===z?colors.primary:colors.surfaceSoft,borderColor:profile.zodiac===z?colors.primary:colors.border}]}><Text style={{fontSize:10}}>{zodiacEmojis[z]}</Text><Text style={{fontSize:10,fontWeight:'800',color:profile.zodiac===z?'#fff':colors.text}}>{z}</Text></TouchableOpacity>)}
         </View>
       </AccordionCard>
-  const GOOGLE_CARD = (
+        const GOOGLE_CARD = (
     <View>
       {firebaseUser ? (
         <View>
@@ -1689,8 +1689,7 @@ export default function App(){
       )}
     </View>
   );
-
-      <AccordionCard title="🔐 Hesap" colors={colors} delay={95}>
+  <AccordionCard title="🔐 Hesap" colors={colors} delay={95}>
               {GOOGLE_CARD}
             </AccordionCard>
             <AccordionCard title="🔒 Güvenlik" defaultOpen={false} colors={colors} delay={100}>
