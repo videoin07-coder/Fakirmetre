@@ -10,7 +10,7 @@
       "android"
     ],
     "android": {
-      "package": "com.fakirmetre",
+      "package": "com.digitalworld.fakirmetre",
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -22,11 +22,11 @@
       "@react-native-firebase/auth",
       "@react-native-google-signin/google-signin"
     ],
+    "owner": "byhack78",
     "extra": {
       "eas": {
-        "projectId": "520c2cb3-a14c-4c52-8b6e-5fc332e705e8"
+        "projectId": "c771340d-5b22-4ead-91e9-8a315f50a65d"
       }
-    },
-    "owner": "musa7373"
+    }
   }
 }
