@@ -1,4 +1,4 @@
-package com.fakirmetre
+package com.byhack78.fakirmetre
 
 import com.byhack78.fakirmetre.BuildConfig
 
