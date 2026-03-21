@@ -1,7 +1,7 @@
-package com.byhack78.fakirmetre
+package com.digitalworld.fakirmetre
 
-import com.byhack78.fakirmetre.R
-import com.byhack78.fakirmetre.BuildConfig
+import com.digitalworld.fakirmetre.R
+import com.digitalworld.fakirmetre.BuildConfig
 
 import android.os.Build
 import android.os.Bundle
