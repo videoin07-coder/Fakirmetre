@@ -1615,6 +1615,33 @@ export default function App(){
   };
 
   // ─── SETTINGS TAB ──────────────────────────────────────────────────────────
+        const GOOGLE_CARD = (
+    <View>
+      {firebaseUser ? (
+        <View>
+          <View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}>
+            <Text style={{fontSize:36}}>👤</Text>
+            <View style={{flex:1}}>
+              <Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text>
+              <Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text>
+              <Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}>
+            <Text style={s.mainBtnTxt}>Cikis Yap</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          <Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text>
+          <TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}>
+            <Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
   const renderSettings=()=>(
     <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={true}>
       {premium==='free'&&<TouchableOpacity onPress={()=>setPremiumModalVisible(true)} style={[s.card,{backgroundColor:colors.gold+'18',borderColor:colors.gold,borderWidth:2,padding:16,flexDirection:'row',alignItems:'center',gap:12}]}>
@@ -1663,32 +1690,6 @@ export default function App(){
           {zodiacSigns.map(z=><TouchableOpacity key={z} onPress={()=>setProfile(p=>({...p,zodiac:z}))} style={[s.zodiacChip,{backgroundColor:profile.zodiac===z?colors.primary:colors.surfaceSoft,borderColor:profile.zodiac===z?colors.primary:colors.border}]}><Text style={{fontSize:10}}>{zodiacEmojis[z]}</Text><Text style={{fontSize:10,fontWeight:'800',color:profile.zodiac===z?'#fff':colors.text}}>{z}</Text></TouchableOpacity>)}
         </View>
       </AccordionCard>
-        const GOOGLE_CARD = (
-    <View>
-      {firebaseUser ? (
-        <View>
-          <View style={{flexDirection:"row",alignItems:"center",gap:12,marginBottom:14}}>
-            <Text style={{fontSize:36}}>👤</Text>
-            <View style={{flex:1}}>
-              <Text style={{fontSize:14,fontWeight:"900",color:colors.text}}>{firebaseUser.displayName||"Kullanici"}</Text>
-              <Text style={{fontSize:12,color:colors.subText}}>{firebaseUser.email}</Text>
-              <Text style={{fontSize:11,color:colors.success,marginTop:2}}>Bagli</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={signOut} style={[s.mainBtn,{backgroundColor:colors.danger,marginBottom:0}]}>
-            <Text style={s.mainBtnTxt}>Cikis Yap</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View>
-          <Text style={{fontSize:13,color:colors.subText,marginBottom:14}}>Google hesabinla giris yap, verilerini bulutta yedekle.</Text>
-          <TouchableOpacity onPress={signInWithGoogle} disabled={authLoading} style={[s.mainBtn,{backgroundColor:"#4285F4",marginBottom:0}]}>
-            <Text style={s.mainBtnTxt}>{authLoading?"Giris yapiliyor...":"Google ile Giris Yap"}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
   <AccordionCard title="🔐 Hesap" colors={colors} delay={95}>
               {GOOGLE_CARD}
             </AccordionCard>

@@ -7,6 +7,35 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:788519844963:android:741440e874b24a5fe18c56",
+        "android_client_info": {
+          "package_name": "com.byhack78.fakirmetre"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "788519844963-lc93e0f7uhhn6fp5ekp9606ut9rl0ftm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1fFAsaZWAbDGsj6YgdlQtoJtphz6Lz6I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "788519844963-lc93e0f7uhhn6fp5ekp9606ut9rl0ftm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:788519844963:android:1a8c7fe51a135a6ee18c56",
         "android_client_info": {
           "package_name": "com.fakirmetre"
