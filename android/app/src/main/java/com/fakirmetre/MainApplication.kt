@@ -1,6 +1,6 @@
 package com.fakirmetre
 
-import com.fakirmetre.BuildConfig
+import com.byhack78.fakirmetre.BuildConfig
 
 import android.app.Application
 import android.content.res.Configuration
