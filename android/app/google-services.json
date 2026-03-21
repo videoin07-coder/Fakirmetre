@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:788519844963:android:741440e874b24a5fe18c56",
+        "mobilesdk_app_id": "1:788519844963:android:acc4e0897e39d4a3e18c56",
         "android_client_info": {
-          "package_name": "com.byhack78.fakirmetre"
+          "package_name": "com.digitalworld.fakirmetre"
         }
       },
       "oauth_client": [
